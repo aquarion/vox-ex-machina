@@ -2,7 +2,7 @@
     require "../libraries/twilio/Services/Twilio.php";
 
     $response = new Services_Twilio_Twiml();
-    $response->say('Leave a message for me at the beep');
+    $response->say('You\'ve reached the voicemail for Nicholas Ay-ven-ell, please leave a message');
     $response->record(
         array(
             'action' => "handle_message.php",

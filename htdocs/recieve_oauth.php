@@ -3,19 +3,12 @@
 include("../src/init.php");
 
 if(isset($_REQUEST['code'])){
-	
-	if($_REQUEST['domain'] == "ist"){
-		$client->setRedirectUri(SITE_URL.'/recieve_oauth.php?domain=ist');
-		$client->authenticate();
-		file_put_contents("../cache/contacts_access.ist", $client->getAccessToken());
-	} elseif($_REQUEST['domain'] == "naq"){
-		$client->setRedirectUri(SITE_URL.'/recieve_oauth.php?domain=naq');
-		$client->authenticate();
-		file_put_contents("../cache/contacts_access.naq", $client->getAccessToken());
-	} 
-	
+	$code = $_REQUEST['domain'];
+	$google_api->setRedirectUri(SITE_URL.'/recieve_oauth.php?domain='.$code);
+	$google_api->authenticate();
+	file_put_contents("../cache/contacts_access.".$code, $google_api->getAccessToken());
 } else {
-	$client->authenticate();
+	$google_api->authenticate();
 }
 
 header('location: getcontact.php');

@@ -1,36 +1,45 @@
 <?PHP
 
 
-set_include_path(get_include_path() . PATH_SEPARATOR . '../libraries/google-api-php-client/src' . PATH_SEPARATOR . '../libraries/twilio');
+set_include_path(get_include_path() . 
+	PATH_SEPARATOR . '../libraries/google-api-php-client/src' . 
+	PATH_SEPARATOR . '../libraries/twilio' .
+	 PATH_SEPARATOR . '../libraries/PHPMailer');
 
 require_once '../etc/config.php';
 require_once 'Google_Client.php';
+require_once 'PHPMailerAutoload.php';
 
-$client = new Google_Client();
-$client->setApplicationName("Vox Ex Machina");
-$client->setScopes(array(
+$google_api = new Google_Client();
+$google_api->setApplicationName("Vox Ex Machina");
+$google_api->setScopes(array(
     'https://apps-apis.google.com/a/feeds/groups/',
     'https://apps-apis.google.com/a/feeds/alias/',
     'https://apps-apis.google.com/a/feeds/user/',
 	'https://www.google.com/m8/feeds/',
 	'https://www.google.com/m8/feeds/user/',
 ));
- $client->setClientId(GOOGLE_CLIENT_ID);
- $client->setClientSecret(GOOGLE_SECRET);
- $client->setRedirectUri(SITE_URL.'/recieve_oauth.php');
- $client->setDeveloperKey(DEVELOPER_KEY);
+ $google_api->setClientId(GOOGLE_CLIENT_ID);
+ $google_api->setClientSecret(GOOGLE_SECRET);
+ $google_api->setRedirectUri(SITE_URL.'/recieve_oauth.php');
+ $google_api->setDeveloperKey(DEVELOPER_KEY);
 
 
 
- function find_contact(&$client, $access_key, $contact){
+ function find_contact(&$google_api, $access_key, $contact){
 
-	$client->setAccessToken($access_key);
+	$google_api->setAccessToken($access_key);
 	$token = json_decode($access_key);
 	$auth_pass = $token->access_token;
 
 	$req = new Google_HttpRequest("https://www.google.com/m8/feeds/contacts/default/full?q=".urlencode($contact));
 	$req->setRequestHeaders(array('GData-Version'=> '3.0','content-type'=>'application/atom+xml; charset=UTF-8; type=feed'));
-	$val = $client->getIo()->authenticatedRequest($req);
+	$val = $google_api->getIo()->authenticatedRequest($req);
+
+	if($val->getResponseHttpCode() != 200){
+		throw new Exception("API Access Failure");
+	}
+
 	$response =$val->getResponseBody();
 	$xml = simplexml_load_string($response);
 
@@ -75,7 +84,7 @@ $client->setScopes(array(
 		foreach($item->link as $link){
 			if($link->attributes()->rel == "http://schemas.google.com/contacts/2008/rel#photo"){
 				$req = new Google_HttpRequest($link->attributes()->href);
-				$val = $client->getIo()->authenticatedRequest($req);
+				$val = $google_api->getIo()->authenticatedRequest($req);
 				$response =$val->getResponseBody();
 				$result->photo = 'data: image/jpeg;base64,'.base64_encode($response);
 				break;
@@ -90,3 +99,30 @@ $client->setScopes(array(
 
 	return $result;
  }
+
+
+function search_accounts($ACCOUNTS, &$google_api, $search, &$error){
+	$contact = false;
+	$error = '';
+	foreach($ACCOUNTS as $code => $account){
+		$access_key = @file_get_contents("../cache/contacts_access.".$code);
+		$google_api->setRedirectUri(SITE_URL.'/recieve_oauth.php?domain='.$code);
+		$authUrl = $google_api->createAuthUrl();
+		if(!$access_key){
+			$error .= '&bull; '.$account['name'].' isn\'t connected, please visit this link to fix this: <a href="'.$authUrl.'">Reconnect '.$account['name'].'</a><br/>';
+		} else {
+			try {
+				$contact = find_contact($google_api, $access_key, $search);
+				file_put_contents("../cache/contacts_access.".$code, $google_api->getAccessToken());
+			} catch (Exception $e){
+			 	$error .= '&bull; '.$account['name'].'\'s connection is broken, please visit this link to fix this: <a href="'.$authUrl.'">Reconnect '.$account['name'].'</a><br/>';
+			}
+		}
+		if($contact->found){
+			$contact->account = $account['name'];
+			$contact->account_email = $account['to'];
+			return $contact;
+		}
+	}
+	return $contact;
+}

@@ -1,3 +1,6 @@
 [submodule "libraries/twilio"]
 	path = libraries/twilio
 	url = https://github.com/twilio/twilio-php.git
+[submodule "libraries/PHPMailer"]
+	path = libraries/PHPMailer
+	url = https://github.com/PHPMailer/PHPMailer
