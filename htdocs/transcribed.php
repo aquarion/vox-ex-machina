@@ -19,6 +19,16 @@ if (!isset($_REQUEST['Caller'])) {
 
 $contact = search_accounts($ACCOUNTS, $google_api, $_REQUEST['Caller'], $error);
 
+if(!$contact->found){
+	$caller = $_REQUEST['Caller'];
+	if($caller[0] == '0'){
+		$number = '+44'.substr($caller, 1);
+	} else {
+		$number = '0'.substr($caller, 3);
+	}
+	$contact = search_accounts($ACCOUNTS, $google_api, $number, $error);
+}
+
 $mail = new PHPMailer;
 $mail->From = 'vox@voicemail.aqxs.net';
 $mail->FromName = 'Vox Ex Machina';
