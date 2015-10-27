@@ -2,6 +2,11 @@
 
 include("../src/init.php");
 
+require_once('../vendor/autoload.php');
+use Postmark\PostmarkClient;
+use Postmark\Models\PostmarkException;
+use Postmark\Models\PostmarkAttachment;
+
 if (!isset($_REQUEST['RecordingUrl'])) {
     echo "Must specify recording url";
     #die;
@@ -19,37 +24,30 @@ if (!isset($_REQUEST['Caller'])) {
 
 $contact = search_accounts($ACCOUNTS, $google_api, $_REQUEST['Caller'], $error);
 
-if(!$contact->found){
-	$caller = $_REQUEST['Caller'];
-	if($caller[0] == '0'){
-		$number = '+44'.substr($caller, 1);
-	} else {
-		$number = '0'.substr($caller, 3);
-	}
-	$contact = search_accounts($ACCOUNTS, $google_api, $number, $error);
-}
 
-$mail = new PHPMailer;
-$mail->From = 'vox@voicemail.aqxs.net';
-$mail->FromName = 'Vox Ex Machina';
+$postmark = new PostmarkClient(POSTMARK_KEY);
 
-$mail->isHTML(true);     
+$message = array();
+$From = 'vox@aqxs.net';
+$FromName = 'Vox Ex Machina';
+
+$message['From'] = sprintf('"%s" <%s>', $FromName, $From);
 
 if($contact->found){
-    $mail->addAddress($contact->account_email);
-    $mail->addReplyTo($contact->email, $contact->name);
+    $message['To'] = $contact->account_email;
+    $message['ReplyTo'] = $contact->email;
 } else {
-    $mail->addAddress(DEFAULT_MAILTO);
+    $message['To'] = DEFAULT_MAILTO;
 
     $contact->name  = $_REQUEST['Caller'];
     $contact->job   = '';
-    $contact->email = 'no-reply@istic.net';
+    $contact->email = $From;
     $contact->photo = false;
     $contact->account = 'no known';
     $contact->found = false;
 }
 
-$mail->Subject = "Voicemail from ".$contact->name;
+$message['Subject'] = "Voicemail from ".$contact->name;
 
 $tags = array(
     '[[NAME]]' => $contact->name,
@@ -69,14 +67,24 @@ if (strtolower($_REQUEST['TranscriptionStatus']) != "completed") {
     $template = "transcribed.html";
 }
 
-$mail->AltBody = $body;
 
 $template = file_get_contents("../src/templates/".$template);
 
-$mail->Body = str_replace(array_keys($tags), array_values($tags), $template);
+$message['TextBody'] = $body;
+$message['HtmlBody'] = str_replace(array_keys($tags), array_values($tags), $template);
 
-$string   = file_get_contents($_REQUEST['RecordingUrl']);
 $filename = "vox_".strtr($contact->name, " ","-")."_".date("Y-m-d").".mp3";
-$mail->AddStringAttachment($string, $filename, $encoding = 'base64', $type = 'application/octet-stream');
 
-$mail->send();
+$attachment = PostmarkAttachment::fromFile($_REQUEST['RecordingUrl'], $filename, 'audio/mpeg');
+
+$message['Attachments'] = array($attachment);
+
+
+try{
+	$resp= $postmark->sendEmailBatch(array($message));
+	var_dump($resp);
+}catch(PostmarkException $ex){
+	var_dump($ex);
+}catch(Exception $ex){
+	var_dump($ex);
+}

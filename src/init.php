@@ -124,5 +124,16 @@ function search_accounts($ACCOUNTS, &$google_api, $search, &$error){
 			return $contact;
 		}
 	}
+
+	if(!$contact->found){
+		$caller = $search;
+		if($caller[0] == '0'){
+			$number = '+44'.substr($caller, 1);
+		} else {
+			$number = '0'.substr($caller, 3);
+		}
+		$contact = search_accounts($ACCOUNTS, $google_api, $number, $error);
+	}
+
 	return $contact;
 }
