@@ -101,7 +101,8 @@ $google_api->setScopes(array(
  }
 
 
-function search_accounts($ACCOUNTS, &$google_api, $search, &$error){
+function search_accounts($ACCOUNTS, &$google_api, $search, &$error, $depth=0){
+	$depth++;
 	$contact = false;
 	$error = '';
 	foreach($ACCOUNTS as $code => $account){
@@ -125,14 +126,14 @@ function search_accounts($ACCOUNTS, &$google_api, $search, &$error){
 		}
 	}
 
-	if(!$contact->found){
+	if(!$contact->found && $depth < 2){
 		$caller = $search;
 		if($caller[0] == '0'){
 			$number = '+44'.substr($caller, 1);
 		} else {
 			$number = '0'.substr($caller, 3);
 		}
-		$contact = search_accounts($ACCOUNTS, $google_api, $number, $error);
+		$contact = search_accounts($ACCOUNTS, $google_api, $number, $error, $depth);
 	}
 
 	return $contact;
