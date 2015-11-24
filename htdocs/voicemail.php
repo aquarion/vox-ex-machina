@@ -13,6 +13,16 @@
     } else {
     	$response->say('You\'ve reached the voicemail for Nicholas Ay-ven-ell, please leave a message');
     }
+
+    $sms_array = array(
+	'to' => MY_MOBILE_NUMBER
+    );
+
+    if($contact->found){
+	$response->sms("Missed call from ".$_REQUEST['FROM']." - ".$contact->name." (".$contact->account.")", $sms_array);
+    } else {
+	$response->sms("Missed call from ".$_REQUEST['From'], $sms_array);
+    }
     $response->record(
         array(
             'action' => "handle_message.php",
