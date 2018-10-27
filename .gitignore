@@ -2,3 +2,4 @@ etc
 cache
 htdocs/outgoing
 vendor
+db.sqlite3
