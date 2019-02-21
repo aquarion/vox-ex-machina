@@ -17,9 +17,13 @@ from django.contrib import admin
 from django.urls import path
 from django.conf.urls import include, url
 
+from information import views as infoviews
 
 urlpatterns = [
+	path('', infoviews.index, name='index'),
     path('admin/', admin.site.urls),
+    # <django-registration>
     url(r'^accounts/', include('django_registration.backends.activation.urls')),
     url(r'^accounts/', include('django.contrib.auth.urls')),
+    # </django-registration>
 ]
