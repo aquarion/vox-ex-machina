@@ -17,7 +17,15 @@ from django.contrib import admin
 from django.urls import path
 from django.conf.urls import include, url
 
+from rest_framework import routers, serializers, viewsets
+
 from information import views as infoviews
+from authenticate.views import GoogleExhangeViewSet
+
+from contacts import views as contact_views
+
+api_router = routers.DefaultRouter()
+api_router.register(r'googleAuth', GoogleExhangeViewSet)
 
 urlpatterns = [
 	path('', infoviews.index, name='index'),
@@ -26,4 +34,9 @@ urlpatterns = [
     url(r'^accounts/', include('django_registration.backends.activation.urls')),
     url(r'^accounts/', include('django.contrib.auth.urls')),
     # </django-registration>
+
+    path('contacts/', contact_views.index),
+
+    url(r'api/', include(api_router.urls)),
+    
 ]
