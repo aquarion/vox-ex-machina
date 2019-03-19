@@ -19,12 +19,8 @@ class GoogleExhangeViewSet(viewsets.ViewSet):
 
     SCOPES = ['https://www.googleapis.com/auth/contacts.readonly']
 
-    @list_route(
-        methods=["GET"])
+    @list_route(methods=["GET"])
     def auth(self,request,pk=None):
-        import os
-        print(os.getcwd())
-
         flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
                                     'keys/client_secret.json',
                                     scopes=self.SCOPES,
@@ -33,14 +29,14 @@ class GoogleExhangeViewSet(viewsets.ViewSet):
 
         authorization_url, state = flow.authorization_url(
             access_type='offline',
-            include_granted_scopes='true'
+            include_granted_scopes='true',
+            prompt='consent'
             )
         request.session['state'] = state
 
         return HttpResponseRedirect(authorization_url)
 
-    @list_route(
-        methods=["GET"])
+    @list_route(methods=["GET"])
     def complete(self, request, pk=None):
         host = Site.objects.get_current().name
         state = request.session['state'];
