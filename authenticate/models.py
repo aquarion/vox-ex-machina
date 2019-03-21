@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 
 class GoogleAccount(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    description = models.TextField(blank=True, max_length=2048)
-    token_json = models.CharField(blank=True, max_length=2048)
 
+    description = models.TextField(max_length=500, blank=True)
+
+    token_json = models.TextField(max_length=1024, blank=True)
